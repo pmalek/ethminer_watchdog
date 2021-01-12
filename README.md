@@ -2,6 +2,8 @@
 
 Run a watchdog on top of [`ethminer`](https://github.com/ethereum-mining/ethminer/)
 
+![Screenshot](/docs/screenshot.png)
+
 ## What is this?
 
 For a long time I was experimenting with some kind of a watchdog that would
