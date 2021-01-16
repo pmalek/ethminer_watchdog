@@ -24,7 +24,7 @@ readonly ETHMINER_OPTS="--farm-recheck 200 --cuda -P ${ETHMINER_POOL_URL}"
 readonly ETHMINER_CMD="${ETHMINER} ${ETHMINER_OPTS}"
 ###############################################################################
 
-print_usage(){
+print_usage() {
   echo "Run a watchdog on top of your ethminer."
   echo "Usage:"
   echo
@@ -35,29 +35,29 @@ print_usage(){
   echo " * ETHMINER_POOL_URL - pool URL to use"
 }
 
-die(){
-  echo "ERROR: ${@}"
+die() {
+  echo "ERROR: ${*}"
   exit 1
 }
 
-die_and_run(){
-  echo "ERROR: ${@}"
+die_and_run() {
+  echo "ERROR: ${*}"
   shift
   "${@}"
   exit 1
 }
 
-check_nvidia_smi(){
+check_nvidia_smi() {
   nvidia-smi >/dev/null 2>&1 || \
     die_and_run "nvidia-smi not found or installed incorrectly" nvidia-smi
 }
 
-check_nvidia_settings(){
+check_nvidia_settings() {
   nvidia-settings --help >/dev/null 2>&1 || \
     die_and_run "nvidia-settings not found or installed incorrectly" nvidia-settings --help
 }
 
-check_ethminer(){
+check_ethminer() {
   if [[ -z "${ETHMINER}" ]]; then
     die 'ETHMINER unset'
   fi
@@ -65,7 +65,9 @@ check_ethminer(){
     die "ethminer not found or installed incorrectly"
 }
 
-check_envs(){
+check_envs() {
+  # We might need to add more vars in the loop later.
+  # shellcheck disable=SC2043
   for e in ETHMINER_POOL_URL; do
     if [[ -z "${!e}" ]]; then
       die "${e} is unset"
@@ -73,25 +75,29 @@ check_envs(){
   done
 }
 
-set_memory_offset(){
+set_memory_offset() {
   local offset
   readonly offset="${1}"
+  # shellcheck disable=SC2086
   sudo ${FLAGS} nvidia-settings -a "${GPU}/GPUMemoryTransferRateOffset[3]=${offset}"
 }
 
-set_clock_offset(){
+set_clock_offset() {
   local offset
   readonly offset="${1}"
+  # shellcheck disable=SC2086
   sudo ${FLAGS} nvidia-settings -a "${GPU}/GPUGraphicsClockOffset[3]=${offset}"
 }
 
-set_fan_speed(){
+set_fan_speed() {
   local speed
   readonly speed="${1}"
+  # shellcheck disable=SC2086
   sudo ${FLAGS} nvidia-settings -a "${GPU}/GPUFanControlState=1" -a "[fan:0]/GPUTargetFanSpeed=${speed}"
 }
 
-turn_off_fan_control(){
+turn_off_fan_control() {
+  # shellcheck disable=SC2086
   sudo ${FLAGS} nvidia-settings -a "${GPU}/GPUFanControlState=0"
 }
 
@@ -99,28 +105,34 @@ set_power_limit() {
   local power
   readonly power="${1}"
   sudo nvidia-smi -i 0 --persistence-mode=1
-  sudo nvidia-smi -i 0 -pl ${power}
+  sudo nvidia-smi -i 0 -pl "${power}"
 }
 
 get_current_power_usage() {
-  for i in {1..5}
+  local power
+  power=""
+
+  for _ in {1..5}
   do
     power=$(nvidia-smi -q -d POWER | grep 'Power Draw' | sed 's/[^0-9,.]*//g' | cut -d . -f 1)
 
     # If above the required limit then just return
-    if (( ${power} > ${POWER_MIN} )); then
-      echo ${power}
+    if (( "${power}" > "${POWER_MIN}" )); then
+      echo "${power}"
       return
     fi
 
-    logger -t "${LOGGER_TAG}" \
-      "`date`: Current power usage ${power} below the limit $POWER_MIN. Sleeping..."
+    log "Current power usage ${power} below the limit ${POWER_MIN}. Sleeping..."
 
     # Otherwise allow couple of times to recheck power draw
     sleep 3
   done
 
-  echo ${power}
+  echo "${power}"
+}
+
+log (){
+  logger -t "${LOGGER_TAG}" "$(date): ${*}"
 }
 
 if [[ ${#} -eq 1 && "${1}" == "--help" ]]; then
@@ -152,13 +164,13 @@ do
   # (( )) for arithmetic context
   # https://stackoverflow.com/a/18668580/675100
 
+  # shellcheck disable=SC2004
   if (( ${power_usage} < ${POWER_MIN} )); then
-    logger -s -t "${LOGGER_TAG}" \
-      "$(date): Current power usage is ${power_usage} < $POWER_MIN killing miner"
+    log "Current power usage is ${power_usage} < ${POWER_MIN} killing miner"
 
     # if ethminer is launched then kill it and sleep
-    if [[ -n "$(ps -ef | grep ethminer | grep -v grep)" ]] ; then
-      logger -s -t "${LOGGER_TAG}" "$(date): ethminer is running (but hung) - killing it..."
+    if [[ -n "$(pgrep ethminer)" ]] ; then
+      log "ethminer is running (but hung) - killing it..."
       killall ethminer
       sleep 4;
     fi
