@@ -19,11 +19,10 @@ couple of months already.
 
 Required environment variables to set:
 
- * `ETHMINER` - path to ethminer binary; default: `ethminer`
- * `ETHMINER_POOL_URL` - pool URL to use
+- `ETHMINER` - path to ethminer binary; default: `ethminer`
+- `ETHMINER_POOL_URL` - pool URL to use
 
 ## Limitations
 
-* For now it runs only on Linux with `gdm` as display manager
+- For now it runs only on Linux with `gdm` as display manager
   (mostly because of `nvidia-settings` behavior)
-
