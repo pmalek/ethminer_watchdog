@@ -53,10 +53,22 @@ TasksMax=16
 WantedBy=default.target
 ```
 
-You can run it as a `system` service by placing the above snippet in e.g. `/etc/systemd/system/ethminer.service` and reloading the `systemd` daemon:
+You can run it as a `system` service by placing the above snippet in e.g. `/etc/systemd/system/ethminer.service`, reloading the `systemd` daemon:
 
 ```shell
 sudo systemctl daemon-reload
+```
+
+and simply starting the service:
+
+```shell
+sudo systemctl start ethminer.service
+```
+
+Logs are available via `journalctl`:
+
+```
+journalctl --unit=ethminer.service --follow --lines 100
 ```
 
 ## Limitations
